@@ -122,7 +122,7 @@ function init() {
   score     = 0;
   lives     = 3;
   level     = 1;
-  state     = 'playing';
+  state     = 'idle';
   totalDots = countDots();
   frightenedDuration = 8000; // ms
 
@@ -180,6 +180,11 @@ function hideMessage() {
 
 // ─── Input ───────────────────────────────────────────────────────────────────
 document.addEventListener('keydown', e => {
+  // Start game on any key press from idle screen
+  if (state === 'idle') {
+    state = 'playing';
+    return;
+  }
   switch (e.key) {
     case 'ArrowLeft':  case 'a': nextDir = DIR.LEFT;  break;
     case 'ArrowRight': case 'd': nextDir = DIR.RIGHT; break;
@@ -189,6 +194,11 @@ document.addEventListener('keydown', e => {
   // prevent page scrolling
   if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key))
     e.preventDefault();
+});
+
+// Also allow tapping the canvas to start on mobile / mouse users
+canvas.addEventListener('click', () => {
+  if (state === 'idle') state = 'playing';
 });
 
 msgBtn.addEventListener('click', () => {
@@ -531,6 +541,38 @@ function drawGhost(g) {
   }
 }
 
+// ─── Start Screen Overlay ────────────────────────────────────────────────────
+function drawStartScreen() {
+  ctx.fillStyle = 'rgba(0,0,0,0.72)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.textAlign = 'center';
+
+  ctx.fillStyle = '#FFD700';
+  ctx.font = 'bold 36px "Courier New", monospace';
+  ctx.fillText('PAC-MAN', canvas.width / 2, canvas.height / 2 - 80);
+
+  ctx.fillStyle = '#fff';
+  ctx.font = '16px "Courier New", monospace';
+  ctx.fillText('Use Arrow Keys or WASD to move', canvas.width / 2, canvas.height / 2 - 30);
+  ctx.fillText('Eat all dots to advance levels', canvas.width / 2, canvas.height / 2 - 8);
+
+  ctx.fillStyle = '#ffb8ae';
+  ctx.fillText('● = 10 pts    ◉ = 50 pts + power', canvas.width / 2, canvas.height / 2 + 20);
+
+  ctx.fillStyle = GHOST_FRIGHTENED;
+  ctx.fillText('Eat frightened ghosts for 200 pts', canvas.width / 2, canvas.height / 2 + 44);
+
+  // Blinking prompt
+  if (Math.floor(Date.now() / 500) % 2 === 0) {
+    ctx.fillStyle = '#FFD700';
+    ctx.font = 'bold 18px "Courier New", monospace';
+    ctx.fillText('Press any key or click to start', canvas.width / 2, canvas.height / 2 + 90);
+  }
+
+  ctx.textAlign = 'left';
+}
+
 // ─── Main Loop ───────────────────────────────────────────────────────────────
 function gameFrame(timestamp) {
   const dt = timestamp - lastTime || 16;
@@ -549,6 +591,10 @@ function gameFrame(timestamp) {
 
   drawPacman();
   ghosts.forEach(drawGhost);
+
+  if (state === 'idle') {
+    drawStartScreen();
+  }
 
   requestAnimationFrame(gameFrame);
 }
