@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pac-Man</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="game-container">
+    <h1>PAC-MAN</h1>
+    <div id="hud">
+      <span>Score: <span id="score">0</span></span>
+      <span>Lives: <span id="lives">3</span></span>
+      <span>Level: <span id="level">1</span></span>
+    </div>
+    <canvas id="gameCanvas" width="560" height="620"></canvas>
+    <div id="message" class="hidden">
+      <p id="message-text"></p>
+      <button id="message-btn">Play Again</button>
+    </div>
+    <div id="controls">
+      <p>Arrow keys or WASD to move</p>
+    </div>
+  </div>
+  <script src="game.js"></script>
+</body>
+</html>
