@@ -494,21 +494,35 @@ function drawStartScreen() {
   ctx.textAlign = 'left';
 }
 
-// ─── Main loop ────────────────────────────────────────────────────────────────
-function gameFrame() {
-  // Clear
-  ctx.fillStyle = '#000';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+// ─── Main loop (fixed timestep) ───────────────────────────────────────────────
+// Game logic always runs at 60 ticks/sec regardless of screen refresh rate.
+// This prevents the game running faster on 90 Hz / 120 Hz mobile displays.
+const TICK_MS    = 1000 / 60; // 16.67 ms per logic tick
+let accumulator  = 0;
+let lastTimestamp = 0;
 
-  drawMap();
+function gameFrame(timestamp) {
+  // How long since last frame (capped at 100 ms to avoid a huge catch-up
+  // burst if the tab was hidden or the device paused briefly)
+  const elapsed = Math.min(timestamp - lastTimestamp, 100);
+  lastTimestamp = timestamp;
 
+  // Accumulate time and run as many fixed logic ticks as have elapsed
   if (state === 'playing') {
-    updatePac();
-    updateGhosts();
-    checkCollisions();
+    accumulator += elapsed;
+    while (accumulator >= TICK_MS) {
+      updatePac();
+      updateGhosts();
+      checkCollisions();
+      accumulator -= TICK_MS;
+    }
     movePixels();
   }
 
+  // Draw every display frame (smooth on any refresh rate)
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  drawMap();
   drawPac();
   ghosts.forEach(drawGhost);
 
