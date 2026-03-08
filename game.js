@@ -5,9 +5,17 @@ const ROWS  = 31;
 
 const WALL = 1, DOT = 2, POWER = 3, EMPTY = 0;
 
-// Frames per tile move (60 fps assumed)
-const PAC_FRAMES   = 4;   // pac-man speed
-const GHOST_FRAMES = 6;   // ghost speed
+// Speed presets — all values must be divisors of TILE (20) so pixel
+// movement lands exactly on tile boundaries (prevents diagonal drift).
+// Higher number = more ticks per tile move = slower.
+const SPEED_PRESETS = {
+  slow:   { pac: 10, ghost: 20, scared: 20, eaten: 10 },
+  normal: { pac:  5, ghost: 10, scared: 20, eaten:  5 },
+  fast:   { pac:  4, ghost:  5, scared: 10, eaten:  4 },
+};
+let speedKey     = 'normal';
+let PAC_FRAMES   = SPEED_PRESETS[speedKey].pac;
+let GHOST_FRAMES = SPEED_PRESETS[speedKey].ghost;
 
 // ─── Map ─────────────────────────────────────────────────────────────────────
 // 1=wall  2=dot  3=power pellet  0=empty passage
@@ -202,8 +210,20 @@ msgBtn.addEventListener('click', () => {
   }
 });
 
+// ─── Speed selector ───────────────────────────────────────────────────────────
+document.getElementById('speedSelect').addEventListener('change', function () {
+  speedKey     = this.value;
+  PAC_FRAMES   = SPEED_PRESETS[speedKey].pac;
+  GHOST_FRAMES = SPEED_PRESETS[speedKey].ghost;
+});
+
 // ─── Pac-Man update ───────────────────────────────────────────────────────────
 function updatePac() {
+  // Don't advance to the next tile until the pixel position has fully
+  // caught up with the current tile. This is what prevents diagonal movement:
+  // if px or py is still mid-way between tiles we wait here.
+  if (pac.px !== pac.tx * TILE || pac.py !== pac.ty * TILE) return;
+
   pac.moveTimer++;
   if (pac.moveTimer < PAC_FRAMES) return;
   pac.moveTimer = 0;
@@ -268,9 +288,13 @@ function updateGhosts() {
       return;
     }
 
-    // Speed: scared = slower, eaten = faster
-    const spd = g.mode === 'scared' ? GHOST_FRAMES + 3
-              : g.mode === 'eaten'  ? 2
+    // Same alignment guard as pac-man — prevents ghost diagonal drift too
+    if (g.px !== g.tx * TILE || g.py !== g.ty * TILE) return;
+
+    // Speed varies by mode; all values come from the active speed preset
+    const sp  = SPEED_PRESETS[speedKey];
+    const spd = g.mode === 'scared' ? sp.scared
+              : g.mode === 'eaten'  ? sp.eaten
               : GHOST_FRAMES;
     g.moveTimer++;
     if (g.moveTimer < spd) return;
@@ -507,16 +531,18 @@ function gameFrame(timestamp) {
   const elapsed = Math.min(timestamp - lastTimestamp, 100);
   lastTimestamp = timestamp;
 
-  // Accumulate time and run as many fixed logic ticks as have elapsed
+  // Accumulate time and run as many fixed logic ticks as have elapsed.
+  // movePixels is inside the loop so pixel positions stay in sync with
+  // tile positions — this is what eliminates diagonal movement.
   if (state === 'playing') {
     accumulator += elapsed;
     while (accumulator >= TICK_MS) {
       updatePac();
       updateGhosts();
       checkCollisions();
+      movePixels(); // must be inside loop, not outside
       accumulator -= TICK_MS;
     }
-    movePixels();
   }
 
   // Draw every display frame (smooth on any refresh rate)

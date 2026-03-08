@@ -46,6 +46,30 @@ h1 {
   display: block;
 }
 
+#speed-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.95rem;
+  color: #aaa;
+}
+
+#speedSelect {
+  background: #111;
+  color: #FFD700;
+  border: 1px solid #FFD700;
+  border-radius: 4px;
+  padding: 4px 10px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+#speedSelect:focus {
+  outline: none;
+  box-shadow: 0 0 6px #FFD700;
+}
+
 #controls {
   color: #888;
   font-size: 0.85rem;
