@@ -156,9 +156,40 @@ document.addEventListener('keydown', e => {
   if (e.key.startsWith('Arrow')) e.preventDefault();
 });
 
-canvas.addEventListener('click', () => {
+// ─── Touch / swipe controls ───────────────────────────────────────────────────
+let touchStartX = null;
+let touchStartY = null;
+const SWIPE_MIN = 20; // minimum px to count as a swipe
+
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault(); // stop page scrolling
+  const t = e.changedTouches[0];
+  touchStartX = t.clientX;
+  touchStartY = t.clientY;
+  // Tap on idle screen starts the game
   if (state === 'idle') state = 'playing';
-});
+}, { passive: false });
+
+canvas.addEventListener('touchend', e => {
+  e.preventDefault();
+  if (touchStartX === null) return;
+  const t = e.changedTouches[0];
+  const dx = t.clientX - touchStartX;
+  const dy = t.clientY - touchStartY;
+  touchStartX = null;
+  touchStartY = null;
+
+  // Ignore tiny taps
+  if (Math.abs(dx) < SWIPE_MIN && Math.abs(dy) < SWIPE_MIN) return;
+  if (state !== 'playing') return;
+
+  // Whichever axis moved more determines the swipe direction
+  if (Math.abs(dx) > Math.abs(dy)) {
+    pac.nextDir = dx > 0 ? RIGHT : LEFT;
+  } else {
+    pac.nextDir = dy > 0 ? DOWN : UP;
+  }
+}, { passive: false });
 
 msgBtn.addEventListener('click', () => {
   hideMessage();
@@ -446,7 +477,7 @@ function drawStartScreen() {
 
   ctx.fillStyle = '#fff';
   ctx.font = '16px "Courier New", monospace';
-  ctx.fillText('Arrow Keys or WASD to move', canvas.width / 2, canvas.height / 2 - 28);
+  ctx.fillText('Arrow Keys / WASD  or  Swipe to move', canvas.width / 2, canvas.height / 2 - 28);
   ctx.fillText('Eat all dots to clear the level', canvas.width / 2, canvas.height / 2 - 6);
 
   ctx.fillStyle = '#ffb8ae';
